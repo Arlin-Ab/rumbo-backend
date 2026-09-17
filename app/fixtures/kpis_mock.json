@@ -1,0 +1,26 @@
+{
+  "resumen": {
+    "usuarios_activos": 342,
+    "retencion_30_dias_pct": 61.5,
+    "tasa_abandono_pct": 14.2,
+    "tiempo_promedio_primera_entrevista_dias": 18,
+    "tiempo_promedio_primer_cliente_dias": 25
+  },
+  "bienestar_antes_despues": [
+    { "mes": "Abr", "antes": 2.3, "despues": 3.1 },
+    { "mes": "May", "antes": 2.5, "despues": 3.4 },
+    { "mes": "Jun", "antes": 2.6, "despues": 3.6 },
+    { "mes": "Jul", "antes": 2.8, "despues": 3.9 }
+  ],
+  "usuarios_por_ruta": [
+    { "ruta": "Tradicional", "usuarios": 158 },
+    { "ruta": "Freelance", "usuarios": 122 },
+    { "ruta": "Ambas", "usuarios": 62 }
+  ],
+  "usuarios_activos_por_mes": [
+    { "mes": "Abr", "activos": 210 },
+    { "mes": "May", "activos": 265 },
+    { "mes": "Jun", "activos": 301 },
+    { "mes": "Jul", "activos": 342 }
+  ]
+}

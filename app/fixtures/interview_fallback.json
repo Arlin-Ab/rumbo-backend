@@ -1,0 +1,18 @@
+{
+  "tradicional": {
+    "mensaje_inicial": "Hola, gracias por venir. Para empezar: contame un poco sobre vos y por que te interesa este puesto.",
+    "respuestas": [
+      "Interesante, ¿podrias darme un ejemplo concreto de una vez que resolviste un problema dificil en tu trabajo o estudio?",
+      "Entiendo. ¿Como manejas el trabajo bajo presion o con plazos ajustados?",
+      "Buena respuesta. Para cerrar, ¿tenes alguna pregunta sobre el puesto o el equipo?"
+    ]
+  },
+  "freelance": {
+    "mensaje_inicial": "Hola, vi tu perfil y me interesa tu servicio. Antes de avanzar, ¿cual es tu tarifa y tiempo estimado para un proyecto como el mio?",
+    "respuestas": [
+      "Ese precio me parece un poco alto, ¿hay margen para ajustarlo si te doy mas trabajo a futuro?",
+      "Bien, ¿que necesitas de mi parte para arrancar y cuando podrias tener el primer avance?",
+      "Perfecto, cerremos los terminos por escrito entonces. Gracias por la claridad."
+    ]
+  }
+}

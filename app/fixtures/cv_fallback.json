@@ -1,0 +1,28 @@
+{
+  "tradicional": {
+    "resumen": "Tu CV muestra una base solida, con algunas oportunidades claras de mejora antes de postularte.",
+    "fortalezas": [
+      "Experiencia relevante bien ordenada cronologicamente",
+      "Buen uso de verbos de accion en la descripcion de tareas"
+    ],
+    "a_mejorar": [
+      "Cuantifica tus logros con numeros (ej. 'aumente ventas en 20%')",
+      "Agrega una seccion breve de habilidades tecnicas al inicio",
+      "Reduce el CV a 1 pagina si tienes menos de 5 anios de experiencia"
+    ],
+    "nota_ia": "Respuesta de demo (modo sin conexion) — no proviene del modelo de IA en este momento."
+  },
+  "freelance": {
+    "resumen": "Tu perfil freelance tiene potencial, pero puede comunicar mejor el valor que ofreces a clientes.",
+    "fortalezas": [
+      "Se nota claridad sobre el tipo de servicio que ofreces",
+      "Tono cercano y profesional"
+    ],
+    "a_mejorar": [
+      "Agrega 1-2 resultados concretos para clientes anteriores",
+      "Incluye un rango de precios o forma de trabajo (por proyecto/por hora)",
+      "Cierra con una llamada a la accion clara (ej. 'escribime para cotizar tu proyecto')"
+    ],
+    "nota_ia": "Respuesta de demo (modo sin conexion) — no proviene del modelo de IA en este momento."
+  }
+}
