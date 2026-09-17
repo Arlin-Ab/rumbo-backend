@@ -1,10 +1,17 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import InterviewSession, User
-from app.schemas import InterviewMessageIn, InterviewMessageOut, InterviewStartIn, InterviewStartOut
+from app.schemas import (
+    InterviewMessageIn,
+    InterviewMessageOut,
+    InterviewSessionOut,
+    InterviewStartIn,
+    InterviewStartOut,
+)
 from app.services.ai_service import continue_interview, start_interview
 from app.services.badges_service import check_and_award_badges
 
@@ -53,3 +60,16 @@ def interview_message(
     db.commit()
 
     return InterviewMessageOut(session_id=session.id, respuesta=respuesta)
+
+
+@router.get("/sessions", response_model=list[InterviewSessionOut])
+def listar_sesiones(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    return (
+        db.query(InterviewSession)
+        .filter(InterviewSession.user_id == current_user.id)
+        .order_by(desc(InterviewSession.fecha))
+        .all()
+    )

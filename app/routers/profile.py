@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.database import get_db
@@ -22,6 +22,17 @@ RECOMENDACIONES_POR_RUTA = {
         "Elegi con cual practicar primero segun lo que sientas mas cerca",
     ],
 }
+
+
+@router.get("", response_model=ProfileOut)
+def get_profile(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    profile = db.get(Profile, current_user.id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Todavia no completaste tu perfil")
+    return profile
 
 
 @router.post("", response_model=ProfileOut)

@@ -14,6 +14,11 @@ class Settings(BaseSettings):
 
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 
+    # Codigo compartido que debe enviar quien se registra con role != "joven"
+    # (institucion/empresa), para que el registro publico no permita auto-asignarse
+    # un rol con acceso a /institucion/kpis.
+    institution_signup_code: str = ""
+
     @property
     def cors_origins_list(self) -> list[str]:
         return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]

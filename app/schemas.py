@@ -1,19 +1,46 @@
+import uuid
 from datetime import datetime
+from typing import Literal
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+
+EXAMPLE_UUID = "3fa85f64-5717-4562-b3fc-2c963f66afa6"
 
 
 # ---------- Auth ----------
 class UserRegister(BaseModel):
     nombre: str
     email: EmailStr
-    password: str
-    role: str = "joven"
+    password: str = Field(min_length=8)
+    role: Literal["joven", "institucion", "empresa"] = "joven"
+    # Requerido solo si role != "joven" (ver INSTITUTION_SIGNUP_CODE en el backend).
+    codigo_institucional: str | None = None
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "nombre": "Ana Torres",
+                "email": "ana.torres@example.com",
+                "password": "supersegura123",
+                "role": "joven",
+                "codigo_institucional": None,
+            }
+        }
+    )
 
 
 class UserLogin(BaseModel):
     email: EmailStr
     password: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "email": "ana.torres@example.com",
+                "password": "supersegura123",
+            }
+        }
+    )
 
 
 class Token(BaseModel):
@@ -23,7 +50,7 @@ class Token(BaseModel):
 
 
 class UserOut(BaseModel):
-    id: int
+    id: uuid.UUID
     nombre: str
     email: EmailStr
     role: str
@@ -38,11 +65,22 @@ class ProfileIn(BaseModel):
     edad: int | None = None
     sector_interes: str | None = None
     nivel_experiencia: str | None = None
-    ruta_preferida: str = "ambas"
+    ruta_preferida: Literal["tradicional", "freelance", "ambas"] = "ambas"
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {
+                "edad": 22,
+                "sector_interes": "Administracion",
+                "nivel_experiencia": "sin experiencia",
+                "ruta_preferida": "tradicional",
+            }
+        }
+    )
 
 
 class ProfileOut(ProfileIn):
-    user_id: int
+    user_id: uuid.UUID
 
     class Config:
         from_attributes = True
@@ -55,11 +93,13 @@ class PlanInicial(BaseModel):
 
 # ---------- Checkin (UC-03 / UC-04) ----------
 class CheckinIn(BaseModel):
-    nivel_emocional: int
+    nivel_emocional: int = Field(ge=1, le=5)
+
+    model_config = ConfigDict(json_schema_extra={"example": {"nivel_emocional": 3}})
 
 
 class CheckinOut(BaseModel):
-    id: int
+    id: uuid.UUID
     fecha: datetime
     nivel_emocional: int
     carga_recomendada: str
@@ -71,13 +111,10 @@ class CheckinOut(BaseModel):
 
 
 # ---------- CV / Pitch (UC-07 / UC-07B) ----------
-class CVReviewIn(BaseModel):
-    modo: str  # "tradicional" | "freelance"
-    texto: str
-
-
+# El input ya no usa un schema Pydantic: POST /cv/review recibe multipart/form-data
+# (modo + texto y/o archivo PDF) para poder aceptar el selector de archivo del UC-07.
 class CVReviewOut(BaseModel):
-    id: int
+    id: uuid.UUID
     modo: str
     fecha: datetime
     feedback_json: dict
@@ -88,28 +125,49 @@ class CVReviewOut(BaseModel):
 
 # ---------- Interview / Negotiation (UC-08 / UC-08B) ----------
 class InterviewStartIn(BaseModel):
-    modo: str  # "tradicional" | "freelance"
+    modo: Literal["tradicional", "freelance"]
     sector: str | None = None
+
+    model_config = ConfigDict(
+        json_schema_extra={"example": {"modo": "tradicional", "sector": "administracion"}}
+    )
 
 
 class InterviewStartOut(BaseModel):
-    session_id: int
+    session_id: uuid.UUID
     mensaje_inicial: str
 
 
 class InterviewMessageIn(BaseModel):
-    session_id: int
+    session_id: uuid.UUID
     mensaje: str
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "example": {"session_id": EXAMPLE_UUID, "mensaje": "Hola, soy nuevo en esto"}
+        }
+    )
 
 
 class InterviewMessageOut(BaseModel):
-    session_id: int
+    session_id: uuid.UUID
     respuesta: str
+
+
+class InterviewSessionOut(BaseModel):
+    id: uuid.UUID
+    modo: str
+    sector: str | None
+    fecha: datetime
+    historial_json: list[dict]
+
+    class Config:
+        from_attributes = True
 
 
 # ---------- Badges (UC-11) ----------
 class BadgeOut(BaseModel):
-    id: int
+    id: uuid.UUID
     tipo: str
     fecha_obtenida: datetime
 

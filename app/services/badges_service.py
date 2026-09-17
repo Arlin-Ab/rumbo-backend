@@ -1,3 +1,5 @@
+import uuid
+
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
@@ -8,16 +10,16 @@ CV_REVIEW_UMBRAL = 1
 INTERVIEW_UMBRAL = 1
 
 
-def _has_badge(db: Session, user_id: int, tipo: str) -> bool:
+def _has_badge(db: Session, user_id: uuid.UUID, tipo: str) -> bool:
     return db.query(Badge).filter(Badge.user_id == user_id, Badge.tipo == tipo).first() is not None
 
 
-def _award(db: Session, user_id: int, tipo: str) -> None:
+def _award(db: Session, user_id: uuid.UUID, tipo: str) -> None:
     if not _has_badge(db, user_id, tipo):
         db.add(Badge(user_id=user_id, tipo=tipo))
 
 
-def check_and_award_badges(db: Session, user_id: int) -> None:
+def check_and_award_badges(db: Session, user_id: uuid.UUID) -> None:
     total_checkins = db.query(func.count(Checkin.id)).filter(Checkin.user_id == user_id).scalar() or 0
     if total_checkins >= CHECKIN_STREAK_UMBRAL:
         _award(db, user_id, "constancia_checkin")
