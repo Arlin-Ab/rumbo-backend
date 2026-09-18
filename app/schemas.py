@@ -159,6 +159,9 @@ class CVReviewOut(BaseModel):
     # Si la IA detecto datos de contacto/formacion en el CV, se actualiza el
     # Profile y se devuelve aca para que el frontend no tenga que pedirlo aparte.
     perfil_actualizado: ProfileOut | None = None
+    # Nombre del archivo original si el CV se subio como PDF/.docx (None si
+    # se mando como texto pegado, o si esta review es historica y no tiene).
+    archivo_nombre: str | None = None
 
     class Config:
         from_attributes = True
@@ -423,6 +426,9 @@ class PostulanteOut(BaseModel):
     ruta_preferida: str | None = None
     ciudad: str | None = None
     experiencia: list[ExperienciaOut] = []
+    # True si el postulante tiene un CV en PDF/.docx guardado (ver GET
+    # /vacantes/{vacante_id}/postulantes/{joven_id}/cv para descargarlo).
+    tiene_cv: bool = False
 
 
 # ---------- KPIs de bienestar (institucion/empresa) ----------

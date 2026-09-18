@@ -77,6 +77,12 @@ class CVReview(Base):
     # "tradicional" | "freelance"
     modo: Mapped[str] = mapped_column(String(20))
     feedback_json: Mapped[dict] = mapped_column(JSON)
+    # Archivo original (PDF/.docx) si el CV se subio como archivo en vez de
+    # texto pegado. archivo_path guarda solo el nombre en disco (ver
+    # app/services/cv_storage.py), nunca el nombre que mando el usuario.
+    archivo_nombre: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    archivo_path: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    archivo_mime: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="cv_reviews")
 

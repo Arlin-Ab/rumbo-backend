@@ -4,6 +4,7 @@ Si la llamada falla o tarda demasiado (mala señal en la demo), cae a una
 respuesta pre-generada guardada en app/fixtures/*.json — "modo demo offline".
 """
 import json
+import unicodedata
 from pathlib import Path
 
 import httpx
@@ -23,6 +24,28 @@ AREAS_CONOCIDAS = [
     "Atencion al cliente",
     "Otro",
 ]
+
+
+def _sin_acentos(valor: str) -> str:
+    descompuesto = unicodedata.normalize("NFKD", valor)
+    return "".join(c for c in descompuesto if not unicodedata.combining(c))
+
+
+def normalizar_area(valor: str | None) -> str | None:
+    """Mapea el 'area_formacion' que devuelve la IA a una de AREAS_CONOCIDAS
+    (ignorando mayusculas/acentos), o None si no matchea ninguna.
+
+    La IA no siempre respeta el vocabulario exacto (p. ej. devuelve "Diseño
+    grafico" con tilde), y si esa variante se guarda tal cual en el perfil
+    termina pisando el sector_interes del usuario y /vacantes/recomendadas
+    deja de encontrar matches con Vacante.area."""
+    if not valor:
+        return None
+    objetivo = _sin_acentos(valor).strip().casefold()
+    for area in AREAS_CONOCIDAS:
+        if _sin_acentos(area).casefold() == objetivo:
+            return area
+    return None
 
 
 def _load_fixture(filename: str) -> dict:

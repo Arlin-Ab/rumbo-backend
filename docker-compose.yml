@@ -23,6 +23,8 @@ services:
       - .env
     environment:
       DATABASE_URL: postgresql://usuario:password@db:5432/rumbo
+    volumes:
+      - rumbo_cv_uploads:/app/uploads
     ports:
       - "8001:8000"
     depends_on:
@@ -31,3 +33,4 @@ services:
 
 volumes:
   rumbo_pgdata:
+  rumbo_cv_uploads:

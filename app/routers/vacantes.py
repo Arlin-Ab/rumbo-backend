@@ -1,13 +1,15 @@
 import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import FileResponse
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.deps import get_current_user, require_role
-from app.models import ExperienciaLaboral, Postulacion, Profile, User, Vacante
+from app.models import CVReview, ExperienciaLaboral, Postulacion, Profile, User, Vacante
 from app.schemas import ExperienciaOut, PostulacionOut, PostulanteOut, VacanteIn, VacanteOut, VacanteUpdate
+from app.services.cv_storage import ruta_cv
 
 router = APIRouter(prefix="/vacantes", tags=["vacantes"])
 
@@ -38,6 +40,15 @@ def _get_vacante_propia(db: Session, vacante_id: uuid.UUID, current_user: User) 
     if vacante is None or vacante.empresa_id != current_user.id:
         raise HTTPException(status_code=404, detail="Vacante no encontrada")
     return vacante
+
+
+def _ultimo_cv_con_archivo(db: Session, user_id: uuid.UUID) -> CVReview | None:
+    return (
+        db.query(CVReview)
+        .filter(CVReview.user_id == user_id, CVReview.archivo_path.is_not(None))
+        .order_by(desc(CVReview.fecha))
+        .first()
+    )
 
 
 @router.post("", response_model=VacanteOut, status_code=201)
@@ -162,15 +173,50 @@ def ver_postulantes(
                 ruta_preferida=profile.ruta_preferida if profile else None,
                 ciudad=profile.ciudad if profile else None,
                 experiencia=[ExperienciaOut.model_validate(e) for e in experiencia],
+                tiene_cv=_ultimo_cv_con_archivo(db, user.id) is not None,
             )
         )
     return postulantes
 
 
+@router.get("/{vacante_id}/postulantes/{joven_id}/cv")
+def descargar_cv_postulante(
+    vacante_id: uuid.UUID,
+    joven_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_role(*PUBLICADORES)),
+):
+    """Descarga el CV (PDF/.docx) que subio un postulante, solo para la
+    empresa/institucion dueña de la vacante a la que se postulo."""
+    _get_vacante_propia(db, vacante_id, current_user)
+
+    ya_postulo = (
+        db.query(Postulacion)
+        .filter(Postulacion.vacante_id == vacante_id, Postulacion.joven_id == joven_id)
+        .first()
+    )
+    if ya_postulo is None:
+        raise HTTPException(status_code=404, detail="Ese usuario no se postulo a esta vacante")
+
+    review = _ultimo_cv_con_archivo(db, joven_id)
+    if review is None or review.archivo_path is None:
+        raise HTTPException(status_code=404, detail="Este postulante no tiene un CV en archivo")
+
+    ruta = ruta_cv(review.archivo_path)
+    if not ruta.exists():
+        raise HTTPException(status_code=404, detail="El archivo del CV ya no esta disponible")
+
+    return FileResponse(
+        ruta,
+        media_type=review.archivo_mime or "application/octet-stream",
+        filename=review.archivo_nombre or ruta.name,
+    )
+
+
 @router.get("/recomendadas", response_model=list[VacanteOut])
 def vacantes_recomendadas(
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_role("joven")),
+    current_user: User = Depends(require_role("joven", "mentor")),
 ):
     """Recomienda vacantes segun el area detectada en el CV (o el sector de interes
     declarado en el perfil, si todavia no se subio ningun CV)."""

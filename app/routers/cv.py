@@ -1,4 +1,5 @@
 import io
+import uuid
 from typing import Literal
 
 from docx import Document
@@ -11,8 +12,9 @@ from app.database import get_db
 from app.deps import get_current_user
 from app.models import CVReview, Profile, User
 from app.schemas import CVReviewOut
-from app.services.ai_service import review_cv
+from app.services.ai_service import normalizar_area, review_cv
 from app.services.badges_service import check_and_award_badges
+from app.services.cv_storage import MIME_POR_EXTENSION, guardar_cv
 
 router = APIRouter(prefix="/cv", tags=["cv"])
 
@@ -33,23 +35,38 @@ def _extraer_texto_docx(contenido: bytes) -> str:
     return "\n".join(p.text for p in documento.paragraphs).strip()
 
 
-def _extraer_texto_archivo(archivo: UploadFile) -> str:
+def _leer_archivo(archivo: UploadFile) -> tuple[bytes, str]:
+    """Valida la extension y devuelve (bytes, extension) sin la IA todavia."""
     nombre = (archivo.filename or "").lower()
-    contenido = archivo.file.read()
     if nombre.endswith(".pdf"):
-        return _extraer_texto_pdf(contenido)
-    if nombre.endswith(".docx"):
-        return _extraer_texto_docx(contenido)
-    raise HTTPException(
-        status_code=400,
-        detail="Formato no soportado. Subi un archivo .pdf o .docx (Word antiguo .doc no esta soportado)",
-    )
+        ext = "pdf"
+    elif nombre.endswith(".docx"):
+        ext = "docx"
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail="Formato no soportado. Subi un archivo .pdf o .docx (Word antiguo .doc no esta soportado)",
+        )
+    return archivo.file.read(), ext
+
+
+def _extraer_texto(contenido: bytes, ext: str) -> str:
+    return _extraer_texto_pdf(contenido) if ext == "pdf" else _extraer_texto_docx(contenido)
 
 
 def _actualizar_perfil_desde_cv(db: Session, user_id, datos: dict) -> Profile | None:
     """UC-07: si la IA detecto edad/telefono/ciudad/area_formacion en el CV, los
     guarda en el Profile (sin pisar campos existentes con datos vacios/null)."""
     campos = {k: v for k, v in (datos or {}).items() if k in ("edad", "telefono", "ciudad", "area_formacion") and v}
+    if "area_formacion" in campos:
+        # "Otro" es una categoria valida para el feedback de CV, pero ninguna
+        # vacante real la usa (ver AREAS en el panel/app): si la dejamos pasar
+        # pisaria un sector_interes que si tiene matches.
+        area_normalizada = normalizar_area(campos["area_formacion"])
+        if area_normalizada is None or area_normalizada == "Otro":
+            del campos["area_formacion"]
+        else:
+            campos["area_formacion"] = area_normalizada
     if not campos:
         return None
 
@@ -74,9 +91,14 @@ def cv_review(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    """UC-07/07B. Acepta el CV/pitch como texto o como archivo PDF/Word (uno de los dos)."""
+    """UC-07/07B. Acepta el CV/pitch como texto o como archivo PDF/Word (uno de los dos).
+    Si es archivo, ademas de analizarlo con IA se guarda el original en disco
+    para que la empresa pueda verlo despues desde la lista de postulantes."""
+    archivo_bytes: bytes | None = None
+    archivo_ext: str | None = None
     if archivo is not None:
-        contenido = _extraer_texto_archivo(archivo)
+        archivo_bytes, archivo_ext = _leer_archivo(archivo)
+        contenido = _extraer_texto(archivo_bytes, archivo_ext)
     elif texto:
         contenido = texto
     else:
@@ -87,7 +109,14 @@ def cv_review(
 
     feedback = review_cv(modo, contenido)
 
-    review = CVReview(user_id=current_user.id, modo=modo, feedback_json=feedback)
+    # El id se genera aca (no se deja el default de la columna) porque
+    # guardar_cv() lo necesita para nombrar el archivo, y el default de
+    # SQLAlchemy recien se aplica al hacer flush/commit.
+    review = CVReview(id=uuid.uuid4(), user_id=current_user.id, modo=modo, feedback_json=feedback)
+    if archivo_bytes is not None and archivo_ext is not None:
+        review.archivo_nombre = archivo.filename
+        review.archivo_mime = MIME_POR_EXTENSION[archivo_ext]
+        review.archivo_path = guardar_cv(review.id, archivo_ext, archivo_bytes)
     db.add(review)
     db.commit()
     db.refresh(review)
@@ -101,6 +130,7 @@ def cv_review(
         fecha=review.fecha,
         feedback_json=review.feedback_json,
         perfil_actualizado=perfil_actualizado,
+        archivo_nombre=review.archivo_nombre,
     )
 
 
