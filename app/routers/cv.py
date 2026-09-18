@@ -11,8 +11,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import CVReview, Profile, User
-from app.schemas import CVReviewOut
-from app.services.ai_service import normalizar_area, review_cv
+from app.schemas import ComparacionCVOut, CVReviewOut
+from app.services.ai_service import comparar_cvs, normalizar_area, review_cv
 from app.services.badges_service import check_and_award_badges
 from app.services.cv_storage import MIME_POR_EXTENSION, guardar_cv
 
@@ -112,7 +112,13 @@ def cv_review(
     # El id se genera aca (no se deja el default de la columna) porque
     # guardar_cv() lo necesita para nombrar el archivo, y el default de
     # SQLAlchemy recien se aplica al hacer flush/commit.
-    review = CVReview(id=uuid.uuid4(), user_id=current_user.id, modo=modo, feedback_json=feedback)
+    review = CVReview(
+        id=uuid.uuid4(),
+        user_id=current_user.id,
+        modo=modo,
+        feedback_json=feedback,
+        texto_cv=contenido,
+    )
     if archivo_bytes is not None and archivo_ext is not None:
         review.archivo_nombre = archivo.filename
         review.archivo_mime = MIME_POR_EXTENSION[archivo_ext]
@@ -144,4 +150,46 @@ def listar_reviews(
         .filter(CVReview.user_id == current_user.id)
         .order_by(desc(CVReview.fecha))
         .all()
+    )
+
+
+@router.get("/comparacion", response_model=ComparacionCVOut)
+def comparacion(
+    modo: Literal["tradicional", "freelance"],
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Compara las dos versiones mas recientes del CV/pitch del mismo modo y
+    devuelve que mejoro respecto a la anterior. Solo tiene sentido cuando el
+    usuario ya reviso su CV al menos dos veces."""
+    reviews = (
+        db.query(CVReview)
+        .filter(CVReview.user_id == current_user.id, CVReview.modo == modo)
+        .order_by(desc(CVReview.fecha))
+        .limit(2)
+        .all()
+    )
+    if len(reviews) < 2:
+        return ComparacionCVOut(
+            hay_comparacion=False,
+            mensaje=(
+                "Todavia no tenes una version anterior de tu CV en este modo para comparar. "
+                "Subi una nueva version mas adelante y te mostramos que mejoraste."
+            ),
+        )
+
+    actual, anterior = reviews[0], reviews[1]
+    resultado = comparar_cvs(
+        anterior={"texto": anterior.texto_cv, "feedback": anterior.feedback_json},
+        actual={"texto": actual.texto_cv, "feedback": actual.feedback_json},
+    )
+    return ComparacionCVOut(
+        hay_comparacion=True,
+        fecha_anterior=anterior.fecha,
+        fecha_actual=actual.fecha,
+        resumen=resultado.get("resumen"),
+        mejoras=resultado.get("mejoras", []),
+        pendientes=resultado.get("pendientes", []),
+        nuevas_sugerencias=resultado.get("nuevas_sugerencias", []),
+        nota_ia=resultado.get("nota_ia"),
     )

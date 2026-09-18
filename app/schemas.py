@@ -167,6 +167,23 @@ class CVReviewOut(BaseModel):
         from_attributes = True
 
 
+class ComparacionCVOut(BaseModel):
+    """Comparacion entre la version mas reciente del CV y la anterior (mismo
+    modo). hay_comparacion=False cuando todavia no hay una version anterior."""
+    hay_comparacion: bool
+    # Presente solo si hay_comparacion es False.
+    mensaje: str | None = None
+    # Presentes solo si hay_comparacion es True.
+    fecha_anterior: datetime | None = None
+    fecha_actual: datetime | None = None
+    resumen: str | None = None
+    mejoras: list[str] = []
+    pendientes: list[str] = []
+    nuevas_sugerencias: list[str] = []
+    # Aviso si la comparacion vino del modo demo offline (IA no disponible).
+    nota_ia: str | None = None
+
+
 # ---------- Interview / Negotiation (UC-08 / UC-08B) ----------
 class InterviewStartIn(BaseModel):
     modo: Literal["tradicional", "freelance"]

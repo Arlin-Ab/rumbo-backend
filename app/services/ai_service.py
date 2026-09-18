@@ -96,6 +96,76 @@ def review_cv(modo: str, texto: str) -> dict:
     return fallback.get(modo, fallback["tradicional"])
 
 
+# Se recorta el texto de cada CV antes de mandarlo al modelo: dos CV completos
+# pueden pasarse del contexto y encarecer la llamada sin aportar (lo relevante
+# para comparar suele estar en las primeras paginas).
+_MAX_TEXTO_COMPARACION = 4000
+
+_COMPARACION_FALLBACK = {
+    "resumen": (
+        "Subiste una nueva version de tu CV. Compararla con la anterior te ayuda a ver tu "
+        "progreso, pero en este momento no pudimos conectar con la IA para el analisis detallado."
+    ),
+    "mejoras": [],
+    "pendientes": [],
+    "nuevas_sugerencias": [
+        "Volve a intentar la comparacion cuando tengas conexion para ver el analisis completo."
+    ],
+    "nota_ia": "Respuesta de demo (modo sin conexion) — no proviene del modelo de IA en este momento.",
+}
+
+
+def _bloque_version(datos: dict, etiqueta: str) -> str:
+    """Arma el texto de una version (anterior/actual) para el prompt de comparacion.
+    `datos` = {'texto': str | None, 'feedback': dict}."""
+    partes = [f"=== {etiqueta} ==="]
+    feedback = datos.get("feedback") or {}
+    a_mejorar = feedback.get("a_mejorar") or []
+    if a_mejorar:
+        partes.append("Sugerencias que recibio en esta version:")
+        partes.extend(f"- {s}" for s in a_mejorar)
+    texto = (datos.get("texto") or "").strip()
+    if texto:
+        partes.append("Texto del CV/pitch:")
+        partes.append(texto[:_MAX_TEXTO_COMPARACION])
+    return "\n".join(partes)
+
+
+def comparar_cvs(anterior: dict, actual: dict) -> dict:
+    """Compara la version nueva del CV con la anterior (mismo modo) y devuelve
+    'resumen', 'mejoras', 'pendientes' y 'nuevas_sugerencias'.
+
+    `anterior` y `actual` son dicts con 'texto' (str | None, el CV de esa
+    version) y 'feedback' (dict con resumen/fortalezas/a_mejorar). Cae a una
+    respuesta generica si la IA no responde."""
+    prompt = (
+        "Actua como coach de empleabilidad juvenil. Un joven reviso su CV/pitch dos veces y "
+        "quiere saber que mejoro respecto a la version anterior. Compara ambas versiones y "
+        "responde SOLO en JSON con las claves 'resumen' (parrafo breve y motivador sobre el "
+        "progreso), 'mejoras' (lista: que mejoro concretamente, sobre todo cuales sugerencias "
+        "anteriores resolvio), 'pendientes' (lista: sugerencias anteriores que todavia no "
+        "atendio) y 'nuevas_sugerencias' (lista: cosas nuevas para seguir mejorando). Se "
+        "concreto y honesto: si no hay mejoras claras, decilo. Responde en español.\n\n"
+        f"{_bloque_version(anterior, 'VERSION ANTERIOR')}\n\n"
+        f"{_bloque_version(actual, 'VERSION NUEVA')}"
+    )
+    raw = call_ai_text(prompt)
+    if raw:
+        try:
+            datos = json.loads(raw)
+            # Normaliza por si el modelo omite alguna clave.
+            return {
+                "resumen": datos.get("resumen", ""),
+                "mejoras": datos.get("mejoras", []),
+                "pendientes": datos.get("pendientes", []),
+                "nuevas_sugerencias": datos.get("nuevas_sugerencias", []),
+            }
+        except json.JSONDecodeError:
+            return {"resumen": raw, "mejoras": [], "pendientes": [], "nuevas_sugerencias": []}
+
+    return dict(_COMPARACION_FALLBACK)
+
+
 def _nombre_idioma(idioma: str) -> str:
     return "ingles" if idioma == "en" else "español"
 

@@ -77,6 +77,11 @@ class CVReview(Base):
     # "tradicional" | "freelance"
     modo: Mapped[str] = mapped_column(String(20))
     feedback_json: Mapped[dict] = mapped_column(JSON)
+    # Texto del CV/pitch de esta version (extraido del archivo o pegado a mano).
+    # Se guarda para poder comparar una version con la anterior (ver
+    # GET /cv/comparacion). Puede ser None en reviews historicas previas a
+    # esta funcionalidad.
+    texto_cv: Mapped[str | None] = mapped_column(Text, nullable=True)
     # Archivo original (PDF/.docx) si el CV se subio como archivo en vez de
     # texto pegado. archivo_path guarda solo el nombre en disco (ver
     # app/services/cv_storage.py), nunca el nombre que mando el usuario.
