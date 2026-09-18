@@ -19,8 +19,12 @@ from app.models import (
     Badge,
     Checkin,
     CVReview,
+    DeviceToken,
+    ExperienciaLaboral,
     InterviewSession,
     Mentoria,
+    MentoriaGrupal,
+    MentoriaGrupalInscripcion,
     MentoriaMensaje,
     MentorProfile,
     Postulacion,
@@ -125,11 +129,19 @@ def _cargar_fixture(nombre: str) -> dict:
 
 
 def _wipe_all(db) -> None:
+    """Borra en orden de dependencia de FK. Si se agrega una tabla nueva que
+    referencia users (o mentorias_grupales), hay que sumarla aca ANTES de
+    User/MentoriaGrupal o el DELETE de esas dos revienta con un
+    ForeignKeyViolation en la segunda corrida del seed."""
     db.query(Postulacion).delete()
     db.query(Vacante).delete()
+    db.query(MentoriaGrupalInscripcion).delete()
+    db.query(MentoriaGrupal).delete()
     db.query(MentoriaMensaje).delete()
     db.query(Mentoria).delete()
     db.query(MentorProfile).delete()
+    db.query(ExperienciaLaboral).delete()
+    db.query(DeviceToken).delete()
     db.query(Badge).delete()
     db.query(InterviewSession).delete()
     db.query(CVReview).delete()

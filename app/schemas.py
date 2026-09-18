@@ -13,7 +13,9 @@ class UserRegister(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8)
     role: Literal["joven", "institucion", "empresa", "mentor"] = "joven"
-    # Requerido solo si role != "joven" (ver INSTITUTION_SIGNUP_CODE en el backend).
+    # Requerido solo si role es "institucion" o "empresa" (ver
+    # INSTITUTION_SIGNUP_CODE / ROLES_CON_CODIGO en app/routers/auth.py).
+    # "mentor" no lo necesita: es un rol entre pares, de auto-registro libre.
     codigo_institucional: str | None = None
 
     model_config = ConfigDict(

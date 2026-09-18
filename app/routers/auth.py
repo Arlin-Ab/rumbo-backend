@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -9,11 +10,24 @@ from app.security import create_access_token, hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
+# Roles institucionales (acceden a /institucion/* y a la gestion de vacantes,
+# es decir a datos agregados de todos los jovenes). "mentor" queda afuera a
+# proposito: en la app movil cualquiera se ofrece como mentor sin invitacion,
+# es un rol entre pares, no de acceso institucional.
+ROLES_CON_CODIGO = ("institucion", "empresa")
+
 
 @router.post("/register", response_model=UserOut, status_code=status.HTTP_201_CREATED)
 def register(payload: UserRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="El email ya esta registrado")
+
+    if payload.role in ROLES_CON_CODIGO:
+        if not settings.institution_signup_code or payload.codigo_institucional != settings.institution_signup_code:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Codigo institucional invalido para registrarse con ese rol",
+            )
 
     user = User(
         nombre=payload.nombre,
