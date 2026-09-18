@@ -9,8 +9,8 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 1440
 
-    anthropic_api_key: str = ""
-    ai_model: str = "claude-sonnet-5"
+    groq_api_key: str = ""
+    ai_model: str = "openai/gpt-oss-120b"
 
     cors_origins: str = "http://localhost:5173,http://localhost:3000"
 

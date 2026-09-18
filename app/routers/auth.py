@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.config import settings
 from app.database import get_db
 from app.deps import get_current_user
 from app.models import User
@@ -15,13 +14,6 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 def register(payload: UserRegister, db: Session = Depends(get_db)):
     if db.query(User).filter(User.email == payload.email).first():
         raise HTTPException(status_code=400, detail="El email ya esta registrado")
-
-    if payload.role != "joven":
-        if not settings.institution_signup_code or payload.codigo_institucional != settings.institution_signup_code:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Codigo institucional invalido para registrarse con ese rol",
-            )
 
     user = User(
         nombre=payload.nombre,

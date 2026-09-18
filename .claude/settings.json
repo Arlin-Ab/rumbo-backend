@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(echo \"sin errores relevantes: $?\")"
+    ]
+  }
+}

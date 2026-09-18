@@ -5,7 +5,19 @@
       "Interesante, ¿podrias darme un ejemplo concreto de una vez que resolviste un problema dificil en tu trabajo o estudio?",
       "Entiendo. ¿Como manejas el trabajo bajo presion o con plazos ajustados?",
       "Buena respuesta. Para cerrar, ¿tenes alguna pregunta sobre el puesto o el equipo?"
-    ]
+    ],
+    "feedback": {
+      "resumen": "Practicaste una entrevista laboral completa. En general mostraste disposicion para responder con ejemplos concretos.",
+      "fortalezas": [
+        "Te mantuviste en tema en cada respuesta",
+        "Mostraste disposicion para dar ejemplos concretos"
+      ],
+      "a_mejorar": [
+        "Cuantifica tus logros con numeros cuando puedas (ej. 'reduje el tiempo en 20%')",
+        "Prepara 2-3 preguntas propias para el entrevistador sobre el puesto o el equipo"
+      ],
+      "nota_ia": "Respuesta de demo (modo sin conexion) — no proviene del modelo de IA en este momento."
+    }
   },
   "freelance": {
     "mensaje_inicial": "Hola, vi tu perfil y me interesa tu servicio. Antes de avanzar, ¿cual es tu tarifa y tiempo estimado para un proyecto como el mio?",
@@ -13,6 +25,18 @@
       "Ese precio me parece un poco alto, ¿hay margen para ajustarlo si te doy mas trabajo a futuro?",
       "Bien, ¿que necesitas de mi parte para arrancar y cuando podrias tener el primer avance?",
       "Perfecto, cerremos los terminos por escrito entonces. Gracias por la claridad."
-    ]
+    ],
+    "feedback": {
+      "resumen": "Practicaste una negociacion con un cliente freelance. Comunicaste tu propuesta con claridad.",
+      "fortalezas": [
+        "Defendiste tu tarifa con seguridad",
+        "Diste pasos claros para arrancar el proyecto"
+      ],
+      "a_mejorar": [
+        "Ofrece opciones (ej. paquetes de precio) en vez de un unico numero fijo",
+        "Cierra siempre pidiendo confirmar los terminos por escrito"
+      ],
+      "nota_ia": "Respuesta de demo (modo sin conexion) — no proviene del modelo de IA en este momento."
+    }
   }
 }

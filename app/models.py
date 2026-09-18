@@ -1,7 +1,7 @@
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, JSON, String, Uuid
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, JSON, String, Text, Uuid
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -34,8 +34,26 @@ class Profile(Base):
     nivel_experiencia: Mapped[str | None] = mapped_column(String(60), nullable=True)
     # "tradicional" | "freelance" | "ambas"
     ruta_preferida: Mapped[str] = mapped_column(String(20), default="ambas")
+    telefono: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    ciudad: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Area detectada por la IA al analizar el CV (distinta de sector_interes,
+    # que el usuario declara a mano). Usa el mismo vocabulario que Vacante.area.
+    area_formacion: Mapped[str | None] = mapped_column(String(120), nullable=True)
 
     user: Mapped["User"] = relationship(back_populates="profile")
+
+
+class ExperienciaLaboral(Base):
+    __tablename__ = "experiencias_laborales"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+    puesto: Mapped[str] = mapped_column(String(120))
+    empresa: Mapped[str] = mapped_column(String(120))
+    fecha_inicio: Mapped[date] = mapped_column(Date)
+    # None = trabajo actual ("hasta la actualidad").
+    fecha_fin: Mapped[date | None] = mapped_column(Date, nullable=True)
+    referencia: Mapped[str | None] = mapped_column(String(300), nullable=True)
 
 
 class Checkin(Base):
@@ -94,3 +112,85 @@ class DeviceToken(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
     token: Mapped[str] = mapped_column(String(255))
+
+
+class MentorProfile(Base):
+    __tablename__ = "mentor_profiles"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), primary_key=True)
+    area_expertise: Mapped[str] = mapped_column(String(120))
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    disponibilidad: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
+    user: Mapped["User"] = relationship()
+
+
+class Mentoria(Base):
+    __tablename__ = "mentorias"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    mentor_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+    joven_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+    # "pendiente" | "aceptada" | "rechazada"
+    estado: Mapped[str] = mapped_column(String(20), default="pendiente")
+    fecha_solicitud: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class MentoriaMensaje(Base):
+    __tablename__ = "mentoria_mensajes"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    mentoria_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("mentorias.id"), index=True)
+    remitente_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"))
+    texto: Mapped[str] = mapped_column(String(2000))
+    fecha: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class MentoriaGrupal(Base):
+    __tablename__ = "mentorias_grupales"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    mentor_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+    titulo: Mapped[str] = mapped_column(String(150))
+    descripcion: Mapped[str] = mapped_column(Text)
+    cupo_maximo: Mapped[int] = mapped_column(Integer)
+    meet_link: Mapped[str] = mapped_column(String(500))
+    fecha_hora: Mapped[datetime] = mapped_column(DateTime)
+    fecha_creacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class MentoriaGrupalInscripcion(Base):
+    __tablename__ = "mentorias_grupales_inscripciones"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    mentoria_grupal_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("mentorias_grupales.id"), index=True)
+    joven_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+    fecha_inscripcion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
+class Vacante(Base):
+    __tablename__ = "vacantes"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    empresa_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+    titulo: Mapped[str] = mapped_column(String(150))
+    area: Mapped[str] = mapped_column(String(120), index=True)
+    pais: Mapped[str] = mapped_column(String(80), index=True)
+    descripcion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    # "pasantia" | "medio_tiempo" | "tiempo_completo" | "freelance" | "temporal"
+    tipo_empleo: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    # "presencial" | "remoto" | "hibrido"
+    modalidad: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    ciudad: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    salario: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    fecha_publicacion: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    activa: Mapped[bool] = mapped_column(default=True)
+
+
+class Postulacion(Base):
+    __tablename__ = "postulaciones"
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    vacante_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("vacantes.id"), index=True)
+    joven_id: Mapped[uuid.UUID] = mapped_column(Uuid, ForeignKey("users.id"), index=True)
+    fecha: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

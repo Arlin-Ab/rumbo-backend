@@ -19,7 +19,7 @@ pip install -r requirements.txt
 copy .env.example .env         # Windows (o cp en bash)
 ```
 
-Editar `.env` con la cadena de conexion real y (opcional) la API key de Anthropic.
+Editar `.env` con la cadena de conexion real y (opcional) la API key de Groq.
 
 ## Correr el servidor
 
@@ -44,7 +44,7 @@ app/
   deps.py           # get_current_user, require_role
   routers/          # un router por caso de uso (auth, profile, checkin, wellbeing, cv, interview, badges, dashboard, institucion)
   services/
-    ai_service.py       # unico punto que llama a internet (Anthropic), con fallback offline
+    ai_service.py       # unico punto que llama a internet (Groq), con fallback offline
     badges_service.py   # logica de insignias (UC-11)
   fixtures/          # respuestas pre-generadas (modo demo offline) y KPIs mock (UC-13)
 ```
